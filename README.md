@@ -1,4 +1,4 @@
-# 🧠 Reasoning based AI Investment System 
+# 🧠 Mutual Fund Investment with AI Reasoning 
 
 An intelligent, AI-powered investment simulation platform that combines **machine learning, financial reasoning, and user control** to optimize portfolio allocation, withdrawals, and long-term sustainability.
 
