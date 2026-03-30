@@ -48,7 +48,9 @@ def load_data():
     df['Close'] = df['Close'].astype(float)
     df.dropna(inplace=True)
     return df
-
+    if df.empty:
+        st.error("⚠️ Failed to fetch market data. Please try again.")
+        st.stop()
 data = load_data()
 
 # -----------------------------
@@ -82,20 +84,39 @@ st.line_chart(data['RSI'].tail(200))
 # -----------------------------
 # ML MODEL
 # -----------------------------
+# -----------------------------
+# ML MODEL (SAFE VERSION)
+# -----------------------------
 features = ['Return','MA50','MA200','Volatility','RSI']
+
+# Safety check
+if data.empty or len(data) < 250:
+    st.error("⚠️ Not enough data to train model. Please refresh or try later.")
+    st.stop()
+
 X = data[features]
 y = (data['Close'].to_numpy() > data['MA50'].to_numpy()).astype(int)
 
-split = int(len(data)*0.8)
-X_train,X_test = X[:split],X[split:]
-y_train,y_test = y[:split],y[split:]
+# Drop any remaining NaN safely
+X = X.dropna()
+y = y.loc[X.index]
+
+# Final safety check
+if len(X) < 10:
+    st.error("⚠️ Insufficient cleaned data for ML model.")
+    st.stop()
+
+split = int(len(X)*0.8)
+
+X_train, X_test = X[:split], X[split:]
+y_train, y_test = y[:split], y[split:]
 
 model = RandomForestClassifier(n_estimators=100, random_state=42)
-model.fit(X_train,y_train)
+model.fit(X_train, y_train)
 
 accuracy = accuracy_score(y_test, model.predict(X_test))
-prediction = model.predict(X.iloc[-1:].values)[0]
 
+prediction = model.predict(X.iloc[-1:].values)[0]
 market_condition = "Bull" if prediction == 1 else "Bear"
 
 # -----------------------------
