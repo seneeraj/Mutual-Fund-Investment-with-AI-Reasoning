@@ -95,7 +95,7 @@ if data.empty or len(data) < 250:
     st.stop()
 
 X = data[features]
-y = (data['Close'].to_numpy() > data['MA50'].to_numpy()).astype(int)
+y = (data['Close'] > data['MA50']).astype(int)
 
 # Drop any remaining NaN safely
 X = X.dropna()
