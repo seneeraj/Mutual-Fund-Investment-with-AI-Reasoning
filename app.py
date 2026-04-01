@@ -37,21 +37,40 @@ risk_profile = st.sidebar.selectbox(
 # -----------------------------
 # LOAD DATA
 # -----------------------------
-@st.cache_data
+@st.cache_data(ttl=3600)  # cache for 1 hour
 def load_data():
-    df = yf.download("^NSEI", period="10y", interval="1d")
+    import time
+    
+    for attempt in range(3):  # retry 3 times
+        try:
+            df = yf.download("^NSEI", period="10y", interval="1d")
 
+            if not df.empty:
+                break
+
+        except Exception:
+            time.sleep(2)
+
+    # If still empty → fallback
+    if df.empty:
+        st.warning("⚠️ Using fallback data due to API limit")
+
+        # Generate synthetic fallback data
+        dates = pd.date_range(end=pd.Timestamp.today(), periods=1000)
+        prices = np.cumsum(np.random.normal(0, 1, 1000)) + 18000
+
+        df = pd.DataFrame({
+            "Close": prices
+        }, index=dates)
+
+    # Fix MultiIndex
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
 
     df = df[['Close']].copy()
     df['Close'] = df['Close'].astype(float)
-    df.dropna(inplace=True)
+
     return df
-    if df.empty:
-        st.error("⚠️ Failed to fetch market data. Please try again.")
-        st.stop()
-data = load_data()
 
 # -----------------------------
 # FEATURES
