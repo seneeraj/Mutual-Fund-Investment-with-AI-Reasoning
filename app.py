@@ -37,33 +37,26 @@ risk_profile = st.sidebar.selectbox(
 # -----------------------------
 # LOAD DATA
 # -----------------------------
-@st.cache_data(ttl=3600)  # cache for 1 hour
+@st.cache_data(ttl=3600)
 def load_data():
     import time
     
-    for attempt in range(3):  # retry 3 times
+    df = pd.DataFrame()
+    
+    for _ in range(3):
         try:
-            df = yf.download("^NSEI", period="10y", interval="1d")
-
+            df = yf.download("^NSEI", period="5y", interval="1d")
             if not df.empty:
                 break
-
-        except Exception:
+        except:
             time.sleep(2)
 
-    # If still empty → fallback
     if df.empty:
-        st.warning("⚠️ Using fallback data due to API limit")
-
-        # Generate synthetic fallback data
+        st.warning("⚠️ Using fallback data")
         dates = pd.date_range(end=pd.Timestamp.today(), periods=1000)
         prices = np.cumsum(np.random.normal(0, 1, 1000)) + 18000
+        df = pd.DataFrame({"Close": prices}, index=dates)
 
-        df = pd.DataFrame({
-            "Close": prices
-        }, index=dates)
-
-    # Fix MultiIndex
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
 
@@ -71,6 +64,16 @@ def load_data():
     df['Close'] = df['Close'].astype(float)
 
     return df
+
+
+# ✅ THIS LINE WAS MISSING / MISPLACED
+data = load_data()
+
+
+# -----------------------------
+# NOW SAFE TO USE data
+# -----------------------------
+data['Return'] = data['Close'].pct_change()
 
 # -----------------------------
 # FEATURES
